@@ -7,7 +7,7 @@ You can run this e.g. on your Desktop-PC with an RTX3060Ti. Then connect your HA
 Currently all recordings are being saved in ./data/unlabeled, might be useful for training the model later.
 
 # Citation
-
+```
 @misc{https://doi.org/10.48550/arxiv.2206.12693,
   doi = {10.48550/ARXIV.2206.12693},
   url = {https://arxiv.org/abs/2206.12693},
@@ -18,7 +18,7 @@ Currently all recordings are being saved in ./data/unlabeled, might be useful fo
   year = {2022}, 
   copyright = {Creative Commons Attribution 4.0 International}
 }
-
+```
 ## Local Install
 
 Clone the repository and set up Python virtual environment:
