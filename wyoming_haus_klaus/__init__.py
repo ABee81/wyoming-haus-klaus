@@ -1,4 +1,4 @@
-"""Wyoming server for faster-whisper."""
+"""Wyoming server for haus-klaus."""
 from pathlib import Path
 
 _DIR = Path(__file__).parent

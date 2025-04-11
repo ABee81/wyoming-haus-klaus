@@ -12,7 +12,7 @@ if requirements_path.is_file():
     with open(requirements_path, "r", encoding="utf-8") as requirements_file:
         requirements = requirements_file.read().splitlines()
 
-module_name = "wyoming_faster_whisper"
+module_name = "wyoming_haus_klaus"
 module_dir = this_dir / module_name
 data_files = []
 
@@ -25,7 +25,7 @@ version = version_path.read_text(encoding="utf-8").strip()
 setup(
     name=module_name,
     version=version,
-    description="Wyoming Server for Faster Whisper",
+    description="Wyoming Server for Haus Klaus based on Faster Whisper fxtentacle/wav2vec2-xls-r-1b-tevr",
     url="http://github.com/rhasspy/wyoming-faster-whisper",
     author="Michael Hansen",
     author_email="mike@rhasspy.org",

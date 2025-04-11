@@ -1,27 +1,38 @@
-# Wyoming Faster Whisper
+# Wyoming Haus Klaus
 
-[Wyoming protocol](https://github.com/rhasspy/wyoming) server for the [faster-whisper](https://github.com/guillaumekln/faster-whisper/) speech to text system.
+[Wyoming protocol](https://github.com/rhasspy/wyoming) server for the [fxtentacle/wav2vec2-xls-r-1b-tevr](https://huggingface.co/fxtentacle/wav2vec2-xls-r-1b-tevr) ASR pipeline. Credits for the model goes to Krabbenhöft, Hajo Nils and Barth, Erhardt, I am not the owner of the model. I have used the rhasspy/wyoming-faster-whisper as a reference. Basically any model from HF can be used with this.
 
-## Home Assistant Add-on
+You can run this e.g. on your Desktop-PC with an RTX3060Ti. Then connect your HA Wyoming Service with your Server and thats it. Your STT request from e.g. HA Voice will then be sent to your ASR pipeline (in this case Desktop-PC), which will invoke the model and respond with an transcription of the recording to HomeAssistant.
 
-[![Show add-on](https://my.home-assistant.io/badges/supervisor_addon.svg)](https://my.home-assistant.io/redirect/supervisor_addon/?addon=core_whisper)
+Currently all recordings are being saved in ./data/unlabeled, might be useful for training the model later.
 
-[Source](https://github.com/home-assistant/addons/tree/master/whisper)
+# Citation
+
+@misc{https://doi.org/10.48550/arxiv.2206.12693,
+  doi = {10.48550/ARXIV.2206.12693},
+  url = {https://arxiv.org/abs/2206.12693},
+  author = {Krabbenhöft, Hajo Nils and Barth, Erhardt},  
+  keywords = {Computation and Language (cs.CL), Sound (cs.SD), Audio and Speech Processing (eess.AS), FOS: Computer and information sciences, FOS: Computer and information sciences, FOS: Electrical engineering, electronic engineering, information engineering, FOS: Electrical engineering, electronic engineering, information engineering, F.2.1; I.2.6; I.2.7},  
+  title = {TEVR: Improving Speech Recognition by Token Entropy Variance Reduction},  
+  publisher = {arXiv},  
+  year = {2022}, 
+  copyright = {Creative Commons Attribution 4.0 International}
+}
 
 ## Local Install
 
 Clone the repository and set up Python virtual environment:
 
 ``` sh
-git clone https://github.com/rhasspy/wyoming-faster-whisper.git
-cd wyoming-faster-whisper
+git clone https://github.com/ABee81/wyoming-haus-klaus.git
+cd wyoming-haus-klaus
 script/setup
 ```
 
 Run a server anyone can connect to:
 
 ```sh
-script/run --model tiny-int8 --language en --uri 'tcp://0.0.0.0:10300' --data-dir /data --download-dir /data
+script/run --model wav2vec2-xls-r-1b-tevr --language en --uri 'tcp://0.0.0.0:10300' --data-dir /data --download-dir /data
 ```
 
 The `--model` can also be a HuggingFace model like `Systran/faster-distil-whisper-small.en`
@@ -30,7 +41,7 @@ The `--model` can also be a HuggingFace model like `Systran/faster-distil-whispe
 
 ``` sh
 docker run -it -p 10300:10300 -v /path/to/local/data:/data rhasspy/wyoming-whisper \
-    --model tiny-int8 --language en
+    --model wav2vec2-xls-r-1b-tevr --language en
 ```
 
 **NOTE**: Models are downloaded temporarily to the `HF_HUB_CACHE` directory, which defaults to `~/.cache/huggingface/hub`.
