@@ -46,6 +46,6 @@ setup(
     ],
     keywords="rhasspy wyoming whisper stt",
     entry_points={
-        "console_scripts": ["wyoming-faster-whisper = wyoming_faster_whisper.__main__:run"]
+        "console_scripts": ["wyoming-haus-klaus = wyoming_haus_klaus.__main__:run"]
     },
 )
