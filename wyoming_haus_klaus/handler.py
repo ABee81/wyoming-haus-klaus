@@ -5,6 +5,7 @@ import logging
 import os
 import tempfile
 import wave
+import requests
 from scipy.io import wavfile
 from typing import Optional
 
@@ -12,6 +13,7 @@ from wyoming.asr import Transcribe, Transcript
 from wyoming.audio import AudioChunk, AudioStop
 from wyoming.event import Event
 from wyoming.info import Describe, Info
+from wyoming.handle import NotHandled, Handled
 from wyoming.server import AsyncEventHandler
 
 from transformers import Wav2Vec2ProcessorWithLM
@@ -19,6 +21,7 @@ import torchaudio.transforms as T
 import torch
 import numpy as np
 from transformers import AutoModelForCTC
+from requests import Response
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,7 +37,9 @@ class HausKlaus:
         self.model = AutoModelForCTC.from_pretrained(modelPath)
         self.processor = HajoProcessor.from_pretrained(modelPath)
         self.beam_size = beam_size
+        self.device = device
         self.model.to(device)
+        self.llm = HausKlausLLMWrapper("EM German Mistral")
     
     # this function will be called for each WAV file
     def predict_single_audio(self, batch):    
@@ -50,11 +55,43 @@ class HausKlaus:
         input_values = self.processor(audio, return_tensors="pt", sampling_rate=16_000).input_values
         # call model on GPU
         with torch.no_grad():
-            logits = self.model(input_values.to('cuda')).logits.cpu().numpy()[0]
+            logits = self.model(input_values.to(self.device)).logits.cpu().numpy()[0]
         # ask HF processor to decode logits
         decoded = self.processor.decode(logits, beam_width=self.beam_size)
         # return as dictionary
         return decoded.text
+
+class HausKlausLLMWrapper:
+    """Class for simple http requests to HausKlaus LLM."""
+    def __init__(self, modelName) -> None:
+        self.modelName = modelName
+        
+    def recognizeIntent(self, text: str, tokenLength: int = 100) -> str:
+        """Recognize intent from text using the LLM."""
+        # Send HTTP request to the LLM
+        response = requests.post(
+            url=f"http://localhost:4891/v1/chat/completions",
+            json={
+                "model": self.modelName,
+                "messages": [{"role":"user","content": text}],
+                "max_tokens": tokenLength,
+            }
+        )
+        # Check if the request was successful
+        if response.status_code != 200:
+            _LOGGER.error("Request failed with status code %d: %s", response.status_code, response.text)
+            return ""
+        
+        # Parse the response
+        try:
+            response_json = response.json()
+            # Extract the text from the response
+            text = response_json["choices"][0]["message"]["content"]
+        except (KeyError, ValueError) as e:
+            _LOGGER.error("Failed to parse response: %s", e)
+            return ""
+            
+        return text
 
 class HausKlausEventHandler(AsyncEventHandler):
     """Event handler for clients."""
@@ -122,7 +159,7 @@ class HausKlausEventHandler(AsyncEventHandler):
 
             async with self.model_lock:
                 text = self.model.predict_single_audio(self.load_single_wav(self._wav_path))
-            _LOGGER.info(text)
+                _LOGGER.info("Transcription: %s", text)
 
             await self.write_event(Transcript(text=text).event())
             _LOGGER.debug("Completed request")
@@ -142,6 +179,21 @@ class HausKlausEventHandler(AsyncEventHandler):
         if Describe.is_type(event.type):
             await self.write_event(self.wyoming_info_event)
             _LOGGER.debug("Sent info")
+            return True
+        
+        if Transcript.is_type(event.type):
+            transcript = Transcript.from_event(event)
+            _LOGGER.debug("Handling: %s...", transcript.text)
+            # Call the LLM to recognize intent
+            intent = self.model.llm.recognizeIntent(transcript.text)
+            _LOGGER.debug("Recognized intent: %s", intent)
+            if intent:
+                await self.write_event(Handled(text=intent).event())
+                _LOGGER.debug("Sent intent")
+            else:
+                await self.write_event(NotHandled(text="No intent recognized").event())
+                _LOGGER.debug("Sent no intent")
+            
             return True
 
         _LOGGER.debug("Event type received: %s", event.type)

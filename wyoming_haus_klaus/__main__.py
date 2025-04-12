@@ -6,7 +6,7 @@ import re
 from functools import partial
 
 import faster_whisper
-from wyoming.info import AsrModel, AsrProgram, Attribution, Info
+from wyoming.info import AsrModel, AsrProgram, Attribution, Info, IntentModel, IntentProgram
 from wyoming.server import AsyncServer
 
 from .handler import HausKlausEventHandler, HausKlaus
@@ -108,6 +108,31 @@ async def main() -> None:
                 ],
             )
         ],
+        intent=[
+            IntentProgram(
+                name="haus-klaus", 
+                description="haus-klaus intent program",
+                attribution=Attribution(
+                    name="ABee81",
+                    url="https://github.com/ABee81/wyoming-haus-klaus",
+                ),
+                installed=True,
+                version=__version__,
+                models=[
+                    IntentModel(
+                        name="haus-klaus",
+                        description="haus-klaus intent model",
+                        attribution=Attribution(
+                            name="ABee81",
+                            url="https://github.com/ABee81/wyoming-haus-klaus",
+                        ),
+                        installed=True,
+                        languages=["de"],
+                        version=__version__,
+                    )
+                    ],
+                )
+            ],
     )
 
     # Load model
