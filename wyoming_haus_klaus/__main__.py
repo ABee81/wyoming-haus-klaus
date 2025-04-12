@@ -44,6 +44,7 @@ async def main() -> None:
         "--language",
         help="Default language to set for transcription",
     )
+    parser.add_argument("--beam-size", type=int, default=500, help="Beam size for decoding")
     #
     parser.add_argument("--debug", action="store_true", help="Log DEBUG messages")
     parser.add_argument(
@@ -119,7 +120,7 @@ async def main() -> None:
             compute_type=args.compute_type,
         )
     else:
-        model = HausKlaus(args.model, device=args.device)
+        model = HausKlaus(args.model, device=args.device, beam_size=args.beam_size)
 
     server = AsyncServer.from_uri(args.uri)
     _LOGGER.info("Ready")

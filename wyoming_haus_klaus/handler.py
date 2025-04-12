@@ -30,9 +30,10 @@ class HajoProcessor(Wav2Vec2ProcessorWithLM):
 class HausKlaus:
     """Dummy class to represent the model & processor together."""
 
-    def __init__(self, modelPath, device='cuda') -> None:
+    def __init__(self, modelPath, beam_size=500, device='cuda') -> None:
         self.model = AutoModelForCTC.from_pretrained(modelPath)
         self.processor = HajoProcessor.from_pretrained(modelPath)
+        self.beam_size = beam_size
         self.model.to(device)
     
     # this function will be called for each WAV file
@@ -50,9 +51,8 @@ class HausKlaus:
         # call model on GPU
         with torch.no_grad():
             logits = self.model(input_values.to('cuda')).logits.cpu().numpy()[0]
-            _LOGGER.debug("Logits: %s", logits)
         # ask HF processor to decode logits
-        decoded = self.processor.decode(logits, beam_width=500)
+        decoded = self.processor.decode(logits, beam_width=self.beam_size)
         # return as dictionary
         return decoded.text
 
