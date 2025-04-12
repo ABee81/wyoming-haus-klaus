@@ -9,8 +9,7 @@ import faster_whisper
 from wyoming.info import AsrModel, AsrProgram, Attribution, Info
 from wyoming.server import AsyncServer
 
-from .handler import HausKlausEventHandler, HausKlaus, HajoProcessor
-from transformers import AutoModelForCTC
+from .handler import HausKlausEventHandler, HausKlaus
 
 from . import __version__
 
@@ -120,10 +119,7 @@ async def main() -> None:
             compute_type=args.compute_type,
         )
     else:
-        automodel = AutoModelForCTC.from_pretrained(args.model)
-        processor = HajoProcessor.from_pretrained(args.model)
-        automodel.to('cuda')
-        model = HausKlaus(automodel, processor)
+        model = HausKlaus(args.model)
 
     server = AsyncServer.from_uri(args.uri)
     _LOGGER.info("Ready")

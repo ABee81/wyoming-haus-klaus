@@ -3,7 +3,6 @@ import argparse
 import asyncio
 import logging
 import os
-import tempfile
 import wave
 from scipy.io import wavfile
 from typing import Optional
@@ -18,6 +17,7 @@ from transformers import Wav2Vec2ProcessorWithLM
 import torchaudio.transforms as T
 import torch
 import numpy as np
+from transformers import AutoModelForCTC
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,9 +29,10 @@ class HajoProcessor(Wav2Vec2ProcessorWithLM):
 class HausKlaus:
     """Dummy class to represent the model & processor together."""
 
-    def __init__(self, autoModel, processor) -> None:
-        self.model = autoModel
-        self.processor = processor
+    def __init__(self, modelPath) -> None:
+        self.model = AutoModelForCTC.from_pretrained(modelPath)
+        self.processor = HajoProcessor.from_pretrained(modelPath)
+        self.model.to('cuda')
     
     # this function will be called for each WAV file
     def predict_single_audio(self, batch):    
@@ -48,6 +49,7 @@ class HausKlaus:
         # call model on GPU
         with torch.no_grad():
             logits = self.model(input_values.to('cuda')).logits.cpu().numpy()[0]
+            _LOGGER.debug("Logits: %s", logits)
         # ask HF processor to decode logits
         decoded = self.processor.decode(logits, beam_width=500)
         # return as dictionary
