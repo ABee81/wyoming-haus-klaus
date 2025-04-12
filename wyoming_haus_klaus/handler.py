@@ -3,6 +3,7 @@ import argparse
 import asyncio
 import logging
 import os
+import tempfile
 import wave
 from scipy.io import wavfile
 from typing import Optional
@@ -29,10 +30,10 @@ class HajoProcessor(Wav2Vec2ProcessorWithLM):
 class HausKlaus:
     """Dummy class to represent the model & processor together."""
 
-    def __init__(self, modelPath) -> None:
+    def __init__(self, modelPath, device='cuda') -> None:
         self.model = AutoModelForCTC.from_pretrained(modelPath)
         self.processor = HajoProcessor.from_pretrained(modelPath)
-        self.model.to('cuda')
+        self.model.to(device)
     
     # this function will be called for each WAV file
     def predict_single_audio(self, batch):    
@@ -76,29 +77,36 @@ class HausKlausEventHandler(AsyncEventHandler):
         self.model_lock = model_lock
         self.initial_prompt = initial_prompt
         self._language = self.cli_args.language
-        self._wav_dir = "./data/unlabeled"
+        self._wav_dir = cli_args.download_dir if cli_args.debug else tempfile.TemporaryDirectory()
         self._wav_path = os.path.join(self._wav_dir, "speech.wav")
         self._wav_file: Optional[wave.Wave_write] = None
         self._wav_idx = 0
-
-    async def handle_event(self, event: Event) -> bool:
-        if AudioChunk.is_type(event.type):
-            chunk = AudioChunk.from_event(event)
-            if self._wav_file is None:
+    
+    def audio_chunk_handler(self, audiochunk: AudioChunk):
+        # Create a new WAV file if it does not exist
+        if self._wav_file is None:
+            # Create folder if it does not exist
+            if not os.path.exists(self._wav_dir):
+                os.makedirs(self._wav_dir)
+            
+            # Save each recording if debug is enabled
+            if self.cli_args.debug:
                 # Count existing files in the directory
-                if not os.path.exists(self._wav_dir):
-                    os.makedirs(self._wav_dir)
                 for file in os.listdir(self._wav_dir):
                     if file.endswith(".wav") and file.startswith("speech-"):
                         self._wav_idx += 1
                 self._wav_path = os.path.join(self._wav_dir, f"speech-{self._wav_idx}.wav")
-                _LOGGER.debug("Audio chunk received, creating WAV file: %s", self._wav_path)
-                self._wav_file = wave.open(self._wav_path, "wb")
-                self._wav_file.setframerate(chunk.rate)
-                self._wav_file.setsampwidth(chunk.width)
-                self._wav_file.setnchannels(chunk.channels)
+            _LOGGER.debug("Audio chunk received, creating WAV file: %s", self._wav_path)
+            self._wav_file = wave.open(self._wav_path, "wb")
+            self._wav_file.setframerate(audiochunk.rate)
+            self._wav_file.setsampwidth(audiochunk.width)
+            self._wav_file.setnchannels(audiochunk.channels)
+        
+        self._wav_file.writeframes(audiochunk.audio)
 
-            self._wav_file.writeframes(chunk.audio)
+    async def handle_event(self, event: Event) -> bool:
+        if AudioChunk.is_type(event.type):
+            self.audio_chunk_handler(AudioChunk.from_event(event))
             return True
 
         if AudioStop.is_type(event.type):

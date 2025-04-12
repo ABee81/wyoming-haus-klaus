@@ -37,8 +37,8 @@ async def main() -> None:
     )
     parser.add_argument(
         "--device",
-        default="cpu",
-        help="Device to use for inference (default: cpu)",
+        default="cuda",
+        help="Device to use for inference (default: cpu). Possible values: cpu, cuda...",
     )
     parser.add_argument(
         "--language",
@@ -119,7 +119,7 @@ async def main() -> None:
             compute_type=args.compute_type,
         )
     else:
-        model = HausKlaus(args.model)
+        model = HausKlaus(args.model, device=args.device)
 
     server = AsyncServer.from_uri(args.uri)
     _LOGGER.info("Ready")
