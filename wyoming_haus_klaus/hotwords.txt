@@ -1,0 +1,28 @@
+Küche
+Licht Smart Plug
+Toaster
+Schlafzimmer
+Rollladen
+Schreibtisch
+Drucker
+RPi Monitor
+Fernseher
+Spotify
+Zigbee2MQTT Bridge
+Home Assistant Voice
+PlayStation
+WoWLAN Fernseher
+Spotlicht Rechts
+Lichtstrippe
+Spotlicht Mitte
+Spotlicht Links
+Wohnzimmer
+Hue Bridge
+Esszimmer
+Flur
+Raspberry Pi 4B
+Badezimmer
+Thermostat
+Thermometer
+Garten
+Rasensprenger

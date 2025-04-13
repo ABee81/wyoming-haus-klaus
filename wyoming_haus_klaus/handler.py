@@ -23,6 +23,7 @@ import numpy as np
 from transformers import AutoModelForCTC
 from requests import Response
 from gpt4all import GPT4All
+from datetime import datetime
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,6 +42,15 @@ class HausKlaus:
         self.device = device
         self.model.to(device)
         self.llm = HausKlausLLMWrapper(modelName="em_german_mistral_v01.Q4_0.gguf", device=device)
+        # load hotwords from file
+        self.hotwords = []
+        hotword_path = "./wyoming_haus_klaus/hotwords.txt"
+        if os.path.exists(hotword_path):
+            with open(hotword_path, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#"):
+                        self.hotwords.append(line)
     
     # this function will be called for each WAV file
     def predict_single_audio(self, batch):    
@@ -58,7 +68,7 @@ class HausKlaus:
         with torch.no_grad():
             logits = self.model(input_values.to(self.device)).logits.cpu().numpy()[0]
         # ask HF processor to decode logits
-        decoded = self.processor.decode(logits, beam_width=self.beam_size)
+        decoded = self.processor.decode(logits, hotwords=self.hotwords, beam_width=self.beam_size)
         # return as dictionary
         return decoded.text
 
@@ -73,7 +83,7 @@ class HausKlausLLMWrapper:
     def recognizeIntent(self, text: str, tokenLength: int = 100) -> str:
         """Recognize intent from text using the LLM."""
         with self.model.chat_session():
-            text = self.model.generate(text, max_tokens=tokenLength)
+            text = self.model.generate(f'Was versuche ich hier zu sagen? Transkribiere folgendes: {text}', max_tokens=tokenLength)
             _LOGGER.debug("LLM response: %s", text)
             
         return text
@@ -113,11 +123,8 @@ class HausKlausEventHandler(AsyncEventHandler):
             
             # Save each recording if debug is enabled
             if self.cli_args.debug:
-                # Count existing files in the directory
-                for file in os.listdir(self._wav_dir):
-                    if file.endswith(".wav") and file.startswith("speech-"):
-                        self._wav_idx += 1
-                self._wav_path = os.path.join(self._wav_dir, f"speech-{self._wav_idx}.wav")
+                current_datetime = datetime.now().strftime("%Y-%m-%d-%H-%M")
+                self._wav_path = os.path.join(self._wav_dir, f"speech-{current_datetime}.wav")
             _LOGGER.debug("Audio chunk received, creating WAV file: %s", self._wav_path)
             self._wav_file = wave.open(self._wav_path, "wb")
             self._wav_file.setframerate(audiochunk.rate)
@@ -159,6 +166,9 @@ class HausKlausEventHandler(AsyncEventHandler):
             if transcribe.language:
                 self._language = transcribe.language
                 _LOGGER.debug("Language set to %s", transcribe.language)
+            if transcribe.context:
+                for key, value in transcribe.context.items():
+                    _LOGGER.debug("1: %s = %s", key, value)
             return True
 
         if Describe.is_type(event.type):
@@ -169,6 +179,9 @@ class HausKlausEventHandler(AsyncEventHandler):
         if Transcript.is_type(event.type):
             transcript = Transcript.from_event(event)
             _LOGGER.debug("Handling: %s...", transcript.text)
+            if transcript.context:
+                for key, value in transcript.context.items():
+                    _LOGGER.debug("1: %s = %s", key, value)
             # Call the LLM to recognize intent
             intent = self.model.llm.recognizeIntent(transcript.text)
             _LOGGER.debug("Recognized intent: %s", intent)
