@@ -22,6 +22,7 @@ import torch
 import numpy as np
 from transformers import AutoModelForCTC
 from requests import Response
+from gpt4all import GPT4All
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class HausKlaus:
         self.beam_size = beam_size
         self.device = device
         self.model.to(device)
-        self.llm = HausKlausLLMWrapper("EM German Mistral")
+        self.llm = HausKlausLLMWrapper(modelName="em_german_mistral_v01.Q4_0.gguf", device=device)
     
     # this function will be called for each WAV file
     def predict_single_audio(self, batch):    
@@ -63,33 +64,17 @@ class HausKlaus:
 
 class HausKlausLLMWrapper:
     """Class for simple http requests to HausKlaus LLM."""
-    def __init__(self, modelName) -> None:
-        self.modelName = modelName
+    def __init__(self, modelName, device) -> None:
+        self.model = GPT4All(model_name=modelName, device=device)
+        self.model.config['systemPrompt'] = "Du bist ein persönlicher Smart Home Assistant. Dein Name ist Haus-Klaus. Du bist an einen Server angebunden und kannst Geräte steuern."
+        _LOGGER.info("Loaded model %s", modelName)
+        
         
     def recognizeIntent(self, text: str, tokenLength: int = 100) -> str:
         """Recognize intent from text using the LLM."""
-        # Send HTTP request to the LLM
-        response = requests.post(
-            url=f"http://localhost:4891/v1/chat/completions",
-            json={
-                "model": self.modelName,
-                "messages": [{"role":"user","content": text}],
-                "max_tokens": tokenLength,
-            }
-        )
-        # Check if the request was successful
-        if response.status_code != 200:
-            _LOGGER.error("Request failed with status code %d: %s", response.status_code, response.text)
-            return ""
-        
-        # Parse the response
-        try:
-            response_json = response.json()
-            # Extract the text from the response
-            text = response_json["choices"][0]["message"]["content"]
-        except (KeyError, ValueError) as e:
-            _LOGGER.error("Failed to parse response: %s", e)
-            return ""
+        with self.model.chat_session():
+            text = self.model.generate(text, max_tokens=tokenLength)
+            _LOGGER.debug("LLM response: %s", text)
             
         return text
 
