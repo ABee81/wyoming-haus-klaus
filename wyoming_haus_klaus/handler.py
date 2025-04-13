@@ -10,7 +10,7 @@ from scipy.io import wavfile
 from typing import Optional
 
 from wyoming.asr import Transcribe, Transcript
-from wyoming.audio import AudioChunk, AudioStop
+from wyoming.audio import AudioChunk, AudioStop, AudioStart
 from wyoming.event import Event
 from wyoming.info import Describe, Info
 from wyoming.handle import NotHandled, Handled
@@ -51,6 +51,7 @@ class HausKlaus:
                     line = line.strip()
                     if line and not line.startswith("#"):
                         self.hotwords.append(line)
+        _LOGGER.info("Loaded %d hotwords", len(self.hotwords))
     
     # this function will be called for each WAV file
     def predict_single_audio(self, batch):    
@@ -76,9 +77,8 @@ class HausKlausLLMWrapper:
     """Class for simple http requests to HausKlaus LLM."""
     def __init__(self, modelName, device) -> None:
         self.model = GPT4All(model_name=modelName, device=device)
-        self.model.config['systemPrompt'] = "Du bist ein persönlicher Smart Home Assistant. Dein Name ist Haus-Klaus. Du bist an einen Server angebunden und kannst Geräte steuern."
+        self.model.config['systemPrompt'] = "Du bist ein persönlicher Smart Home Assistant. Dein Name ist Haus-Klaus. Du bist an einen HomeAssistant Server angebunden und kannst Geräte steuern."
         _LOGGER.info("Loaded model %s", modelName)
-        
         
     def recognizeIntent(self, text: str, tokenLength: int = 100) -> str:
         """Recognize intent from text using the LLM."""
@@ -134,6 +134,11 @@ class HausKlausEventHandler(AsyncEventHandler):
         self._wav_file.writeframes(audiochunk.audio)
 
     async def handle_event(self, event: Event) -> bool:
+        if AudioStart.is_type(event.type):
+            audiostart = AudioStart.from_event(event)
+            _LOGGER.debug("Audio started with %s channels, %s rate and %s width", audiostart.channels, audiostart.rate, audiostart.width)
+            return True
+        
         if AudioChunk.is_type(event.type):
             self.audio_chunk_handler(AudioChunk.from_event(event))
             return True
