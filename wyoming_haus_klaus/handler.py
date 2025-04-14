@@ -80,10 +80,10 @@ class HausKlausLLMWrapper:
         self.model.config['systemPrompt'] = "Du bist ein persönlicher Smart Home Assistant. Dein Name ist Haus-Klaus. Du bist an einen HomeAssistant Server angebunden und kannst Geräte steuern."
         _LOGGER.info("Loaded model %s", modelName)
         
-    def recognizeIntent(self, text: str, tokenLength: int = 100) -> str:
+    def recognizeIntent(self, text: str, tokenLength: int = 30) -> str:
         """Recognize intent from text using the LLM."""
         with self.model.chat_session():
-            text = self.model.generate(f'Was versuche ich hier zu sagen? Transkribiere folgendes: {text}', max_tokens=tokenLength)
+            text = self.model.generate(f'Der User versucht dir folgendes zu sagen, wiederhole das gesagte:{text}', max_tokens=tokenLength)
             _LOGGER.debug("LLM response: %s", text)
             
         return text
@@ -186,10 +186,10 @@ class HausKlausEventHandler(AsyncEventHandler):
             _LOGGER.debug("Handling: %s...", transcript.text)
             if transcript.context:
                 for key, value in transcript.context.items():
-                    _LOGGER.debug("1: %s = %s", key, value)
-            # Call the LLM to recognize intent
+                    _LOGGER.debug("%s : %s", key, value)
+            # Call the LLM to start conversation
             intent = self.model.llm.recognizeIntent(transcript.text)
-            _LOGGER.debug("Recognized intent: %s", intent)
+            _LOGGER.debug("Answer: %s", intent)
             if intent:
                 await self.write_event(Handled(text=intent).event())
                 _LOGGER.debug("Sent intent")
