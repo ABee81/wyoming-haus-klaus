@@ -37,10 +37,10 @@ class HausKlaus:
 
     def __init__(self, modelPath, beam_size=500, device='cuda') -> None:
         self.model = AutoModelForCTC.from_pretrained(modelPath)
+        self.model.to(device)
         self.processor = HajoProcessor.from_pretrained(modelPath)
         self.beam_size = beam_size
         self.device = device
-        self.model.to(device)
         self.llm = HausKlausLLMWrapper(modelName="em_german_mistral_v01.Q4_0.gguf", device=device)
         # load hotwords from file
         self.hotwords = []
@@ -80,10 +80,10 @@ class HausKlausLLMWrapper:
         self.model.config['systemPrompt'] = "Du bist ein persönlicher Smart Home Assistant. Dein Name ist Haus-Klaus. Du bist an einen HomeAssistant Server angebunden und kannst Geräte steuern."
         _LOGGER.info("Loaded model %s", modelName)
         
-    def recognizeIntent(self, text: str, tokenLength: int = 30) -> str:
+    def generateResponse(self, text: str, tokenLength: int = 30) -> str:
         """Recognize intent from text using the LLM."""
         with self.model.chat_session():
-            text = self.model.generate(f'Der User versucht dir folgendes zu sagen, wiederhole das gesagte:{text}', max_tokens=tokenLength)
+            text = self.model.generate(text, max_tokens=tokenLength)
             _LOGGER.debug("LLM response: %s", text)
             
         return text
@@ -183,18 +183,18 @@ class HausKlausEventHandler(AsyncEventHandler):
         
         if Transcript.is_type(event.type):
             transcript = Transcript.from_event(event)
-            _LOGGER.debug("Handling: %s...", transcript.text)
+            _LOGGER.debug("Sending to LLM: %s...", transcript.text)
             if transcript.context:
                 for key, value in transcript.context.items():
                     _LOGGER.debug("%s : %s", key, value)
             # Call the LLM to start conversation
-            intent = self.model.llm.recognizeIntent(transcript.text)
-            _LOGGER.debug("Answer: %s", intent)
-            if intent:
-                await self.write_event(Handled(text=intent).event())
+            response = self.model.llm.generateResponse(transcript.text)
+            _LOGGER.debug("Answer: %s", response)
+            if response:
+                await self.write_event(Handled(text=response).event())
                 _LOGGER.debug("Sent intent")
             else:
-                await self.write_event(NotHandled(text="No intent recognized").event())
+                await self.write_event(NotHandled(text="No response").event())
                 _LOGGER.debug("Sent no intent")
             
             return True
