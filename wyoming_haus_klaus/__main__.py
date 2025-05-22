@@ -108,31 +108,6 @@ async def main() -> None:
                 ],
             )
         ],
-        intent=[
-            IntentProgram(
-                name="haus-klaus", 
-                description="haus-klaus intent program",
-                attribution=Attribution(
-                    name="ABee81",
-                    url="https://github.com/ABee81/wyoming-haus-klaus",
-                ),
-                installed=True,
-                version=__version__,
-                models=[
-                    IntentModel(
-                        name="haus-klaus",
-                        description="haus-klaus intent model",
-                        attribution=Attribution(
-                            name="ABee81",
-                            url="https://github.com/ABee81/wyoming-haus-klaus",
-                        ),
-                        installed=True,
-                        languages=["de"],
-                        version=__version__,
-                    )
-                    ],
-                )
-            ],
     )
 
     # Load model
