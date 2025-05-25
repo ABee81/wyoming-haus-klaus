@@ -1,28 +1,30 @@
 Küche
 Licht Smart Plug
 Toaster
+Kaffeemaschine
 Schlafzimmer
-Rollladen
+Thermostat
 Schreibtisch
+Wohnzimmer
 Drucker
 RPi Monitor
 Fernseher
-Spotify
-Zigbee2MQTT Bridge
-Home Assistant Voice
+Thermometer
 PlayStation
 WoWLAN Fernseher
+Wake on LAN PC
 Spotlicht Rechts
 Lichtstrippe
 Spotlicht Mitte
 Spotlicht Links
 Wohnzimmer
 Hue Bridge
+Spotify
+Home Assistant Voice
 Esszimmer
+Rollladen
 Flur
 Raspberry Pi 4B
 Badezimmer
-Thermostat
-Thermometer
 Garten
 Rasensprenger
