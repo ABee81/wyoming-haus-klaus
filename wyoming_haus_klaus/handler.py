@@ -68,7 +68,7 @@ class HausKlaus:
         with torch.no_grad():
             logits = self.model(input_values.to(self.device)).logits.cpu().numpy()[0]
         # ask HF processor to decode logits
-        decoded = self.processor.decode(logits, hotwords=self.hotwords, beam_width=self.beam_size)
+        decoded = self.processor.decode(logits, alpha=0.7, beta=0.75, hotwords=self.hotwords, beam_width=self.beam_size)
         # return as dictionary
         return decoded.text
 
