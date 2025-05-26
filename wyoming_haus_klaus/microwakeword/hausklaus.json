@@ -3,7 +3,7 @@
   "wake_word": "Hausklaus",
   "author": "ABee81",
   "website": "https://github.com/ABee81",
-  "model": "hausklaus_v3.tflite",
+  "model": "hausklaus_v4.tflite",
   "trained_languages": ["de"],
   "version": 2,
   "micro": {
