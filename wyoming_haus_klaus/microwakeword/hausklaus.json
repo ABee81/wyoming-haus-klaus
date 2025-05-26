@@ -3,13 +3,13 @@
   "wake_word": "Hausklaus",
   "author": "ABee81",
   "website": "https://github.com/ABee81",
-  "model": "hausklaus.tflite",
+  "model": "hausklaus_v3.tflite",
   "trained_languages": ["de"],
   "version": 2,
   "micro": {
     "probability_cutoff": 0.95,
     "feature_step_size": 10,
-    "sliding_window_size": 7,
+    "sliding_window_size": 10,
     "tensor_arena_size": 26100,
     "minimum_esphome_version": "2024.7.0"
   }
