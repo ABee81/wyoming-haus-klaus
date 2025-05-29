@@ -3,11 +3,11 @@
   "wake_word": "Hausklaus",
   "author": "ABee81",
   "website": "https://github.com/ABee81",
-  "model": "hausklaus_v4.tflite",
+  "model": "hausklaus.tflite",
   "trained_languages": ["de"],
   "version": 2,
   "micro": {
-    "probability_cutoff": 0.95,
+    "probability_cutoff": 0.99,
     "feature_step_size": 10,
     "sliding_window_size": 10,
     "tensor_arena_size": 26100,
